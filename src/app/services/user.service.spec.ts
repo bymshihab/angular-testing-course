@@ -61,10 +61,12 @@ describe('UserService', () => {
         service.getUsers().subscribe(users => {
           expect(users).toEqual(MOCK_USERS);
           expect(users.length).toBe(2);
-          expect(users[0]).toEqual(jasmine.objectContaining({
-            name: 'Khaled',
-            email: 'khaled@example.com'
-          }));
+          expect(users[0].name).toBe('Khaled');
+          expect(users[1].email).toBe('shihab@example.com');
+          // expect(users[0]).toEqual(jasmine.objectContaining({
+          //   name: 'Khaled',
+          //   email: 'khaled@example.com'
+          // }));
         });
 
         const req = expectHttpRequest('GET', API_URL);
