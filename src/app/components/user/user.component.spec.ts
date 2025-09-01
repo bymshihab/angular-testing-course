@@ -253,4 +253,273 @@ describe('UserComponent', () => {
       expect(icon0).toBe(icon6);
     });
   });
+
+  // Integration Tests - Component + Service Interactions
+  describe('Integration Tests - Component and Service', () => {
+    describe('Complete User Workflow', () => {
+      it('should load users, add a new user, edit it, and delete it', () => {
+        // Setup initial data
+        mockUserService.getUsers.and.returnValue(of(mockUsers));
+
+        // Step 1: Load initial users
+        component.ngOnInit();
+        expect(component.users).toEqual(mockUsers);
+        expect(component.users.length).toBe(2);
+
+        // Step 2: Add a new user
+        const newUserData = { name: 'Alice Johnson', email: 'alice@example.com' };
+        const createdUser: User = { id: 3, name: 'Alice Johnson', email: 'alice@example.com' };
+        component.newUser = newUserData;
+        mockUserService.addUser.and.returnValue(of(createdUser));
+
+        component.addUser();
+
+        expect(mockUserService.addUser).toHaveBeenCalledWith(newUserData);
+        expect(component.users).toContain(createdUser);
+        expect(component.users.length).toBe(3);
+        expect(component.newUser).toEqual({ name: '', email: '' });
+
+        // Step 3: Edit the newly added user
+        const updatedUserData = { name: 'Alice Updated', email: 'alice.updated@example.com' };
+        const updatedUser: User = { id: 3, name: 'Alice Updated', email: 'alice.updated@example.com' };
+        mockUserService.updateUser.and.returnValue(of(updatedUser));
+
+        // Get the actual user from the component's array to edit
+        const userToEdit = component.users.find(u => u.id === 3);
+        expect(userToEdit).toBeDefined();
+
+        component.editUser(userToEdit!);
+        expect(component.isEditMode).toBeTrue();
+        expect(component.editingUser?.id).toBe(3);
+        expect(component.editingUser?.name).toBe('Alice Johnson');
+
+        component.newUser = updatedUserData;
+        component.addUser(); // This will trigger update in edit mode
+
+        expect(mockUserService.updateUser).toHaveBeenCalledWith(3, updatedUserData);
+        // Find the updated user in the array
+        const updatedUserIndex = component.users.findIndex(u => u.id === 3);
+        expect(component.users[updatedUserIndex]).toEqual(updatedUser);
+        expect(component.isEditMode).toBeFalse();
+        expect(component.users.length).toBe(3); // Should still be 3 after update
+
+        // Step 4: Delete the user - use the updated user from the component's array
+        spyOn(window, 'confirm').and.returnValue(true);
+        mockUserService.deleteUser.and.returnValue(of(void 0));
+
+        const userToDelete = component.users.find(u => u.id === 3);
+        expect(userToDelete).toBeDefined(); // Ensure user exists
+        component.deleteUser(userToDelete!);
+
+        expect(mockUserService.deleteUser).toHaveBeenCalledWith(3);
+        expect(component.users.find(u => u.id === 3)).toBeUndefined(); // User should be removed
+        expect(component.users.length).toBe(2);
+      });
+    });
+
+    describe('Service Error Handling Integration', () => {
+      it('should handle service errors gracefully during user operations', () => {
+        spyOn(console, 'error');
+
+        // Test error during initial load
+        mockUserService.getUsers.and.returnValue(throwError(() => new Error('Network error')));
+
+        expect(() => component.ngOnInit()).not.toThrow();
+        expect(console.error).toHaveBeenCalledWith('Error loading users:', jasmine.any(Error));
+
+        // Test error during add
+        component.newUser = { name: 'Test User', email: 'test@example.com' };
+        mockUserService.addUser.and.returnValue(throwError(() => new Error('Add failed')));
+
+        component.addUser();
+        expect(console.error).toHaveBeenCalledWith('Error adding user:', jasmine.any(Error));
+
+        // Test error during update
+        component.isEditMode = true;
+        component.editingUser = { id: 1, name: 'Test', email: 'test@example.com' };
+        mockUserService.updateUser.and.returnValue(throwError(() => new Error('Update failed')));
+
+        component.addUser();
+        expect(console.error).toHaveBeenCalledWith('Error updating user:', jasmine.any(Error));
+
+        // Test error during delete
+        spyOn(window, 'confirm').and.returnValue(true);
+        mockUserService.deleteUser.and.returnValue(throwError(() => new Error('Delete failed')));
+
+        component.deleteUser(mockUsers[0]);
+        expect(console.error).toHaveBeenCalledWith('Error deleting user:', jasmine.any(Error));
+      });
+    });
+
+    describe('State Management Integration', () => {
+      it('should maintain consistent state during multiple operations', () => {
+        // Initialize with users
+        mockUserService.getUsers.and.returnValue(of(mockUsers));
+        component.ngOnInit();
+
+        // Start editing a user
+        component.editUser(mockUsers[0]);
+        expect(component.isEditMode).toBeTrue();
+        expect(component.editingUser).toEqual(mockUsers[0]);
+        expect(component.newUser.name).toBe('John Doe');
+        expect(component.newUser.email).toBe('john@example.com');
+
+        // Cancel edit - state should be reset
+        component.cancelEdit();
+        expect(component.isEditMode).toBeFalse();
+        expect(component.editingUser).toBeNull();
+        expect(component.newUser).toEqual({ name: '', email: '' });
+
+        // Try to add user with empty fields - should not call service
+        component.addUser();
+        expect(mockUserService.addUser).not.toHaveBeenCalled();
+        expect(mockUserService.updateUser).not.toHaveBeenCalled();
+      });
+
+      it('should handle edit mode state correctly during operations', () => {
+        // Setup initial state
+        component.users = [...mockUsers];
+
+        // Edit user
+        component.editUser(mockUsers[0]);
+        expect(component.isEditMode).toBeTrue();
+
+        // Update user data
+        component.newUser = { name: 'Updated John', email: 'john.updated@example.com' };
+        const updatedUser: User = { id: 1, name: 'Updated John', email: 'john.updated@example.com' };
+        mockUserService.updateUser.and.returnValue(of(updatedUser));
+
+        // Perform update
+        component.addUser();
+
+        // Verify state is reset after successful update
+        expect(component.isEditMode).toBeFalse();
+        expect(component.editingUser).toBeNull();
+        expect(component.newUser).toEqual({ name: '', email: '' });
+        expect(component.users[0]).toEqual(updatedUser);
+      });
+    });
+
+    describe('Service Call Sequencing', () => {
+      it('should make service calls in correct order during complex operations', () => {
+        const callOrder: string[] = [];
+
+        mockUserService.getUsers.and.callFake(() => {
+          callOrder.push('getUsers');
+          return of(mockUsers);
+        });
+
+        mockUserService.addUser.and.callFake(() => {
+          callOrder.push('addUser');
+          return of({ id: 3, name: 'New User', email: 'new@example.com' });
+        });
+
+        mockUserService.updateUser.and.callFake(() => {
+          callOrder.push('updateUser');
+          return of({ id: 3, name: 'Updated User', email: 'updated@example.com' });
+        });
+
+        mockUserService.deleteUser.and.callFake(() => {
+          callOrder.push('deleteUser');
+          return of(void 0);
+        });
+
+        // Load users
+        component.ngOnInit();
+
+        // Add user
+        component.newUser = { name: 'New User', email: 'new@example.com' };
+        component.addUser();
+
+        // Edit user
+        const newUser = component.users[component.users.length - 1];
+        component.editUser(newUser);
+        component.newUser = { name: 'Updated User', email: 'updated@example.com' };
+        component.addUser();
+
+        // Delete user
+        spyOn(window, 'confirm').and.returnValue(true);
+        component.deleteUser(newUser);
+
+        expect(callOrder).toEqual(['getUsers', 'addUser', 'updateUser', 'deleteUser']);
+      });
+    });
+
+    describe('Data Consistency Tests', () => {
+      it('should maintain data consistency between service responses and component state', () => {
+        const initialUsers: User[] = [
+          { id: 1, name: 'User 1', email: 'user1@example.com' },
+          { id: 2, name: 'User 2', email: 'user2@example.com' }
+        ];
+
+        // Load initial users
+        mockUserService.getUsers.and.returnValue(of(initialUsers));
+        component.ngOnInit();
+        expect(component.users).toEqual(initialUsers);
+
+        // Add user and verify it's added to the correct position
+        const newUser: User = { id: 3, name: 'User 3', email: 'user3@example.com' };
+        component.newUser = { name: 'User 3', email: 'user3@example.com' };
+        mockUserService.addUser.and.returnValue(of(newUser));
+
+        component.addUser();
+        expect(component.users.length).toBe(3);
+        expect(component.users[2]).toEqual(newUser);
+
+        // Update user and verify the correct user is updated
+        const updatedUser: User = { id: 2, name: 'Updated User 2', email: 'updated2@example.com' };
+        mockUserService.updateUser.and.returnValue(of(updatedUser));
+
+        component.editUser(component.users[1]);
+        component.newUser = { name: 'Updated User 2', email: 'updated2@example.com' };
+        component.addUser();
+
+        expect(component.users[1]).toEqual(updatedUser);
+        expect(component.users[0].name).toBe('User 1'); // Other users unchanged
+        expect(component.users[2].name).toBe('User 3');
+
+        // Delete user and verify correct user is removed
+        spyOn(window, 'confirm').and.returnValue(true);
+        mockUserService.deleteUser.and.returnValue(of(void 0));
+
+        component.deleteUser(component.users[1]);
+        expect(component.users.length).toBe(2);
+        expect(component.users.find(u => u.id === 2)).toBeUndefined();
+        expect(component.users[0].name).toBe('User 1');
+        expect(component.users[1].name).toBe('User 3');
+      });
+    });
+
+    describe('Edge Cases Integration', () => {
+      it('should handle service returning null or undefined gracefully', () => {
+        // Test with null response
+        mockUserService.getUsers.and.returnValue(of(null as any));
+        expect(() => component.ngOnInit()).not.toThrow();
+
+        // Test with undefined response
+        mockUserService.getUsers.and.returnValue(of(undefined as any));
+        expect(() => component.ngOnInit()).not.toThrow();
+      });
+
+      it('should handle concurrent operations correctly', () => {
+        component.users = [...mockUsers];
+
+        // Start editing a user
+        component.editUser(mockUsers[0]);
+
+        // Try to delete another user while in edit mode
+        spyOn(window, 'confirm').and.returnValue(true);
+        mockUserService.deleteUser.and.returnValue(of(void 0));
+
+        component.deleteUser(mockUsers[1]);
+
+        // Edit mode should still be active
+        expect(component.isEditMode).toBeTrue();
+        expect(component.editingUser).toEqual(mockUsers[0]);
+
+        // But the other user should be deleted
+        expect(component.users).not.toContain(mockUsers[1]);
+      });
+    });
+  });
 });
