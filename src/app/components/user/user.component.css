@@ -1,0 +1,101 @@
+/* Custom styles for Material components that need specific overrides */
+
+/* Add button gradient override for Material Design */
+.mat-mdc-raised-button.mat-primary {
+  --mdc-protected-button-container-color: transparent;
+}
+
+/* Ensure proper spacing for mat-card-avatar when using Tailwind */
+.mat-mdc-card-header .mat-mdc-card-avatar {
+  margin-inline-end: 16px;
+}
+
+/* Material icon sizing consistency */
+.mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Override Material's default margins for better Tailwind integration */
+.mat-mdc-card-content {
+  padding: 0 !important;
+}
+
+.mat-mdc-card-header {
+  padding: 0 !important;
+}
+
+.mat-mdc-card-actions {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+::ng-deep .mat-form-field-appearance-outline.mat-focused .mat-form-field-outline-thick {
+  color: transparent !important;
+}
+
+/* Force Tailwind utility classes to override Material UI typography */
+h1.m-0, h2.m-0, h3.m-0, h4.m-0, h5.m-0, h6.m-0 {
+  margin: 0 !important;
+}
+
+h1.p-0, h2.p-0, h3.p-0, h4.p-0, h5.p-0, h6.p-0 {
+  padding: 0 !important;
+}
+
+p.m-0 {
+  margin: 0 !important;
+}
+
+p.p-0 {
+  padding: 0 !important;
+}
+
+/* Specific override for Material's typography margin/padding */
+.mat-mdc-card-content h1,
+.mat-mdc-card-content h2,
+.mat-mdc-card-content h3,
+.mat-mdc-card-content h4,
+.mat-mdc-card-content h5,
+.mat-mdc-card-content h6 {
+  margin-block-start: 0 !important;
+  margin-block-end: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.mat-mdc-card-content p {
+  margin-block-start: 0 !important;
+  margin-block-end: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Force all elements with Tailwind margin/padding utilities to have higher specificity */
+[class*="m-0"] {
+  margin: 0 !important;
+}
+
+[class*="p-0"] {
+  padding: 0 !important;
+}
+
+[class*="mt-0"] {
+  margin-top: 0 !important;
+}
+
+[class*="mb-0"] {
+  margin-bottom: 0 !important;
+}
+
+[class*="ml-0"] {
+  margin-left: 0 !important;
+}
+
+[class*="mr-0"] {
+  margin-right: 0 !important;
+}
+
+
+

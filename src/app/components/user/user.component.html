@@ -1,0 +1,150 @@
+<mat-card class="max-w-6xl mx-auto my-6 shadow-2xl rounded-2xl bg-gradient-to-br from-gray-50 to-blue-100">
+  <mat-card-header class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-2xl p-6">
+    <mat-card-title class="text-2xl font-semibold flex items-center gap-2">
+      <mat-icon class="text-white">people</mat-icon>
+      User Management System
+    </mat-card-title>
+    <mat-card-subtitle class="text-blue-100 text-sm mt-2">Manage users and add new members to your
+      team</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content class="p-8">
+    <!-- Add/Edit User Section -->
+    <div class="mb-10">
+      <div class="flex items-center gap-3 mb-2 mt-2">
+        <mat-icon class="text-indigo-500 text-3xl">{{ isEditMode ? 'edit' : 'person_add' }}</mat-icon>
+        <h3 class="text-gray-800 font-semibold text-xl m-0">{{ isEditMode ? 'Edit User' : 'Add New User' }}</h3>
+        <span *ngIf="isEditMode" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Edit Mode</span>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+          <mat-form-field appearance="fill" class="flex-1">
+            <mat-label>Full Name</mat-label>
+            <input matInput [(ngModel)]="newUser.name" placeholder="Enter full name">
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="flex-1">
+            <mat-label>Email Address</mat-label>
+            <input matInput [(ngModel)]="newUser.email" placeholder="Enter email address" type="email">
+            <mat-icon matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="flex justify-end gap-3">
+          <button *ngIf="isEditMode" mat-stroked-button (click)="cancelEdit()"
+            class="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2 rounded-lg transition-all duration-300">
+            <mat-icon>cancel</mat-icon>
+            Cancel
+          </button>
+          <button mat-raised-button color="primary" (click)="addUser()" [disabled]="!newUser.name || !newUser.email"
+            class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 border-none px-8 py-3 font-semibold rounded-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-lg disabled:opacity-60 disabled:transform-none">
+            <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+            {{ isEditMode ? 'Update User' : 'Add User' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- <mat-divider class="my-10 bg-gray-200"></mat-divider> -->
+
+    <!-- User List Section -->
+    <div class="mb-8">
+      <div class="flex flex-wrap items-center gap-3 mb-8">
+        <div class="flex items-center gap-3">
+          <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-2 rounded-lg shadow-lg">
+            <mat-icon class="text-white text-2xl">group</mat-icon>
+          </div>
+          <div class="p-0 m-0">
+            <h3 class="text-gray-800 font-bold text-2xl m-0  p-0">Team Members</h3>
+            <p class="text-gray-500 text-sm m-0 p-0">Manage your team efficiently</p>
+          </div>
+        </div>
+        <span
+          class="bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-bold ml-auto border border-indigo-200"
+          *ngIf="users.length > 0">{{ users.length }} {{ users.length === 1 ? 'Member' : 'Members' }}</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        *ngIf="users.length > 0; else noUsers">
+        <mat-card *ngFor="let user of users; let i = index"
+          class="transition-all duration-300 cursor-pointer rounded-2xl overflow-hidden hover:-translate-y-3 hover:shadow-2xl border-0 h-32 relative group"
+          [ngClass]="getCardGradient(i)">
+
+          <!-- Background Pattern -->
+          <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-2 right-2 w-16 h-16 bg-white rounded-full"></div>
+            <div class="absolute bottom-2 left-2 w-8 h-8 bg-white rounded-full"></div>
+          </div>
+
+          <mat-card-content class="p-4 h-full flex items-center relative z-10">
+            <div class="flex items-center gap-3 w-full">
+              <!-- Avatar -->
+              <div
+                class="bg-white bg-opacity-90 backdrop-blur-sm rounded-full p-2 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div
+                  class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-inner">
+                  <mat-icon class="text-lg text-center">{{ getAvatarIcon(i) }}</mat-icon>
+                </div>
+              </div>
+
+              <!-- User Info -->
+              <div class="flex-1 min-w-0 mt-3">
+                <h4
+                  class="text-gray-800 font-bold text-base m-0 truncate group-hover:text-indigo-700 transition-colors">
+                  {{ user.name }}</h4>
+                <div class="flex items-center gap-1 mt-1">
+                  <mat-icon class="text-indigo-500 text-sm w-4 h-4">email</mat-icon>
+                  <span class="text-gray-600 text-xs truncate">{{ user.email }}</span>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button mat-icon-button (click)="editUser(user)"
+                    class="w-6 h-6 text-indigo-600 hover:bg-indigo-100 hover:scale-110 transition-all duration-200"
+                    matTooltip="Edit User">
+                    <mat-icon class="text-sm">edit</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="deleteUser(user)"
+                    class="w-6 h-6 text-red-600 hover:bg-red-100 hover:scale-110 transition-all duration-200"
+                    matTooltip="Delete User">
+                    <mat-icon class="text-sm">delete</mat-icon>
+                  </button>
+                  <button mat-icon-button
+                    class="w-6 h-6 text-green-600 hover:bg-green-100 hover:scale-110 transition-all duration-200"
+                    matTooltip="View Profile">
+                    <mat-icon class="text-sm">visibility</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <ng-template #noUsers>
+        <div class="text-center py-20 relative">
+          <!-- Decorative Background -->
+          <div class="absolute inset-0 bg-gradient-to-br from-gray-50 to-indigo-50 rounded-3xl opacity-50"></div>
+          <div class="relative z-10">
+            <div
+              class="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <mat-icon class="text-5xl text-indigo-400">group_add</mat-icon>
+            </div>
+            <h4 class="text-gray-700 font-bold text-xl mb-2">Ready to build your team?</h4>
+            <p class="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">Start by adding your first team member
+              using the form above. Build something amazing together!</p>
+            <div class="mt-6">
+              <button mat-raised-button color="primary"
+                class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                <mat-icon>add</mat-icon>
+                Add First Member
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </mat-card-content>
+</mat-card>
