@@ -13,31 +13,42 @@ export class UserComponent implements OnInit {
 
   constructor(private userService: UserService) {}
 
-  async ngOnInit() {
-    this.users = await this.userService.getUsers();
+  ngOnInit() {
+    this.userService.getUsers().subscribe(users => {
+      this.users = users;
+    });
   }
 
-  async addUser() {
+  addUser() {
     if (!this.newUser.name || !this.newUser.email) return;
 
-    try {
-      if (this.isEditMode && this.editingUser?.id) {
-        // Update existing user
-        const updated = await this.userService.updateUser(this.editingUser.id, this.newUser);
-        const index = this.users.findIndex(u => u.id === this.editingUser!.id);
-        if (index !== -1) {
-          this.users[index] = updated;
+    if (this.isEditMode && this.editingUser?.id) {
+      // Update existing user
+      this.userService.updateUser(this.editingUser.id, this.newUser).subscribe({
+        next: (updated) => {
+          const index = this.users.findIndex(u => u.id === this.editingUser!.id);
+          if (index !== -1) {
+            this.users[index] = updated;
+          }
+          this.cancelEdit();
+        },
+        error: (error) => {
+          console.error('Error updating user:', error);
+          // You can add user-friendly error handling here
         }
-        this.cancelEdit();
-      } else {
-        // Add new user
-        const created = await this.userService.addUser(this.newUser);
-        this.users.push(created);
-        this.resetForm();
-      }
-    } catch (error) {
-      console.error('Error saving user:', error);
-      // You can add user-friendly error handling here
+      });
+    } else {
+      // Add new user
+      this.userService.addUser(this.newUser).subscribe({
+        next: (created) => {
+          this.users.push(created);
+          this.resetForm();
+        },
+        error: (error) => {
+          console.error('Error adding user:', error);
+          // You can add user-friendly error handling here
+        }
+      });
     }
   }
 
@@ -47,19 +58,21 @@ export class UserComponent implements OnInit {
     this.isEditMode = true;
   }
 
-  async deleteUser(user: User) {
+  deleteUser(user: User) {
     if (!user.id) return;
 
     const confirmed = confirm(`Are you sure you want to delete ${user.name}?`);
     if (!confirmed) return;
 
-    try {
-      await this.userService.deleteUser(user.id);
-      this.users = this.users.filter(u => u.id !== user.id);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      // You can add user-friendly error handling here
-    }
+    this.userService.deleteUser(user.id).subscribe({
+      next: () => {
+        this.users = this.users.filter(u => u.id !== user.id);
+      },
+      error: (error) => {
+        console.error('Error deleting user:', error);
+        // You can add user-friendly error handling here
+      }
+    });
   }
 
   cancelEdit() {
